@@ -8,9 +8,14 @@ import (
 )
 
 type Config struct {
-	Theme       string `yaml:"theme"`
-	RefreshRate int    `yaml:"refresh_rate"` // in milliseconds
-	DefaultPage string `yaml:"default_page"`
+	Theme          string `yaml:"theme"`
+	RefreshRate    int    `yaml:"refresh_rate"` // in milliseconds
+	DefaultPage    string `yaml:"default_page"`
+	RemoteMode     bool   `yaml:"remote_mode"`     // Enable remote monitoring
+	RemoteURL      string `yaml:"remote_url"`      // Remote server URL
+	RemoteServer   bool   `yaml:"remote_server"`   // Run as server
+	RemotePort     string `yaml:"remote_port"`     // Server port
+	PluginsEnabled bool   `yaml:"plugins_enabled"` // Enable plugin system
 }
 
 func LoadConfig() (*Config, error) {
@@ -23,9 +28,14 @@ func LoadConfig() (*Config, error) {
 
 	// Default config
 	cfg := &Config{
-		Theme:       "default",
-		RefreshRate: 1000,
-		DefaultPage: "procs",
+		Theme:          "default",
+		RefreshRate:    1000,
+		DefaultPage:    "procs",
+		RemoteMode:     false,
+		RemoteURL:      "",
+		RemoteServer:   false,
+		RemotePort:     "8080",
+		PluginsEnabled: false,
 	}
 
 	data, err := os.ReadFile(configPath)

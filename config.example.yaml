@@ -8,5 +8,14 @@ theme: "Omarchy Default"
 refresh_rate: 1000
 
 # Default page to show on startup
-# Options: "procs", "disks", "net", "temp", "gpu", "docker", "cpu", "mem"
+# Options: "procs", "disks", "net", "temp", "gpu", "docker", "plugins", "cpu", "mem"
 default_page: "procs"
+
+# Remote Monitoring
+remote_mode: false          # Enable remote monitoring client
+remote_url: ""              # Remote server URL (e.g., "http://192.168.1.100:8080")
+remote_server: false        # Run as remote monitoring server
+remote_port: "8080"         # Server port
+
+# Plugin System
+plugins_enabled: false      # Enable custom plugins

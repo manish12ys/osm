@@ -1,0 +1,37 @@
+# Binaries
+omarchy-monitor
+osm
+
+# Build artifacts
+*.pkg.tar.zst
+pkg/
+src/
+
+# Go build cache
+*.o
+*.a
+*.so
+
+# Test binaries
+*.test
+*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+
+# Documentation artifacts
+PHASE3_SUMMARY.md
+DESIGN_UX_SUMMARY.md
+COMPLETION_REPORT.md

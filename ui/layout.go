@@ -22,6 +22,7 @@ type AppLayout struct {
 	Temp        *TempComponent
 	GPU         *GPUComponent
 	DockerTable *DockerTableComponent
+	Plugins     *PluginsComponent
 	CPUDetail   *CPUDetailComponent
 	MemDetail   *MemDetailComponent
 	ActivePage  string
@@ -90,7 +91,7 @@ func NewAppLayout() *AppLayout {
 	// Footer
 	footer := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | k: Kill | t: Theme | /: Search | e: Export ")
+		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | k: Kill | t: Theme | /: Search | e: Export ")
 	footer.SetBorder(true)
 
 	// Components
@@ -111,6 +112,8 @@ func NewAppLayout() *AppLayout {
 	dockerTableComp := NewDockerTableComponent()
 	dockerTableComp.Table.SetBorder(true).SetTitle(" Docker Containers (6) ")
 
+	pluginsComp := NewPluginsComponent()
+
 	cpuDetailComp := NewCPUDetailComponent()
 
 	memDetailComp := NewMemDetailComponent()
@@ -123,6 +126,7 @@ func NewAppLayout() *AppLayout {
 	pages.AddPage("temp", tempComp.Flex, true, false)
 	pages.AddPage("gpu", gpuComp.Table, true, false)
 	pages.AddPage("docker", dockerTableComp.Table, true, false)
+	pages.AddPage("plugins", pluginsComp.Flex, true, false)
 	pages.AddPage("cpu", cpuDetailComp.Flex, true, false)
 	pages.AddPage("mem", memDetailComp.Flex, true, false)
 
@@ -151,6 +155,7 @@ func NewAppLayout() *AppLayout {
 		Temp:        tempComp,
 		GPU:         gpuComp,
 		DockerTable: dockerTableComp,
+		Plugins:     pluginsComp,
 		CPUDetail:   cpuDetailComp,
 		MemDetail:   memDetailComp,
 	}
@@ -203,6 +208,7 @@ func (l *AppLayout) ApplyTheme() {
 	l.Temp.ApplyTheme()
 	l.GPU.ApplyTheme()
 	l.DockerTable.ApplyTheme()
+	l.Plugins.ApplyTheme()
 	l.CPUDetail.ApplyTheme()
 	l.MemDetail.ApplyTheme()
 }

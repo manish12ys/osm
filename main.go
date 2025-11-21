@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"omarchy-monitor/config"
 	"omarchy-monitor/core"
+	"omarchy-monitor/plugins"
+	"omarchy-monitor/remote"
 	"omarchy-monitor/ui"
 
 	"github.com/gdamore/tcell/v2"
@@ -33,6 +36,31 @@ func main() {
 		layout.Pages.SwitchToPage(activePage)
 		// Focus logic needs to be updated if we switch page initially
 		// But let's keep it simple for now or handle it below
+	}
+
+	// Start remote monitoring server if enabled
+	if cfg != nil && cfg.RemoteServer {
+		server := remote.NewServer(cfg.RemotePort)
+		go func() {
+			if err := server.Start(); err != nil {
+				fmt.Printf("Remote server error: %v\n", err)
+			}
+		}()
+	}
+
+	// Initialize plugin manager if enabled
+	var pluginManager *plugins.Manager
+	if cfg != nil && cfg.PluginsEnabled {
+		home, _ := os.UserHomeDir()
+		pluginsDir := filepath.Join(home, ".config", "osm", "plugins")
+		pluginManager = plugins.NewManager(pluginsDir)
+		pluginManager.LoadPlugins()
+
+		// Create example plugins if directory is empty
+		if len(pluginManager.Plugins) == 0 {
+			plugins.CreateExamplePlugins(pluginsDir)
+			pluginManager.LoadPlugins()
+		}
 	}
 
 	// History buffers for graphs
@@ -129,6 +157,11 @@ func main() {
 			activePage = "mem"
 			layout.ActivePage = activePage
 			layout.App.SetFocus(layout.MemDetail.Flex)
+		case '9':
+			layout.Pages.SwitchToPage("plugins")
+			activePage = "plugins"
+			layout.ActivePage = activePage
+			layout.App.SetFocus(layout.Plugins.Flex)
 		case 't':
 			ui.CycleTheme()
 			layout.ApplyTheme()
@@ -193,6 +226,7 @@ func main() {
 			var temps []core.TempStat
 			var gpus []core.GPUStat
 			var containers []core.ContainerStat
+			var pluginResults map[string]*plugins.PluginOutput
 
 			if activePage == "procs" {
 				var err error
@@ -213,6 +247,8 @@ func main() {
 				gpus, _ = core.FetchGPUStats()
 			} else if activePage == "docker" {
 				containers, _ = core.FetchContainers()
+			} else if activePage == "plugins" && pluginManager != nil {
+				pluginResults = pluginManager.ExecuteAll()
 			}
 
 			layout.App.QueueUpdateDraw(func() {
@@ -230,6 +266,8 @@ func main() {
 					layout.GPU.Update(gpus)
 				} else if activePage == "docker" {
 					layout.DockerTable.Update(containers)
+				} else if activePage == "plugins" && pluginResults != nil {
+					layout.Plugins.Update(pluginResults)
 				} else if activePage == "cpu" {
 					layout.CPUDetail.Update(cpuHistory, perCoreUsage)
 				} else if activePage == "mem" {
