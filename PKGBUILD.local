@@ -1,0 +1,46 @@
+# Maintainer: Your Name <manishchowdary2006@gmail.com>
+pkgname=omarchy-monitor-git
+pkgver=1.0.0.r0.g$(git rev-parse --short HEAD 2>/dev/null || echo "local")
+pkgrel=1
+pkgdesc="A beautiful, lightweight terminal-based system monitor built with Go (development version)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/manish12ys/osm"
+license=('MIT')
+depends=()
+makedepends=('go' 'git')
+provides=('omarchy-monitor')
+conflicts=('omarchy-monitor')
+source=()
+sha256sums=()
+
+pkgver() {
+    cd "$startdir"
+    printf "1.0.0.r%s.g%s" "$(git rev-list --count HEAD 2>/dev/null || echo 0)" "$(git rev-parse --short HEAD 2>/dev/null || echo 'local')"
+}
+
+build() {
+    cd "$startdir"
+    
+    export CGO_CPPFLAGS="${CPPFLAGS}"
+    export CGO_CFLAGS="${CFLAGS}"
+    export CGO_CXXFLAGS="${CXXFLAGS}"
+    export CGO_LDFLAGS="${LDFLAGS}"
+    export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+    
+    go build -o omarchy-monitor .
+}
+
+package() {
+    cd "$startdir"
+    
+    # Install binary
+    install -Dm755 omarchy-monitor "${pkgdir}/usr/bin/osm"
+    
+    # Install documentation
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    
+    # Install license if it exists
+    if [ -f LICENSE ]; then
+        install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    fi
+}

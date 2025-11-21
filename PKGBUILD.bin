@@ -1,0 +1,34 @@
+# Maintainer: Your Name <manishchowdary2006@gmail.com>
+pkgname=omarchy-monitor-bin
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="A beautiful, lightweight terminal-based system monitor built with Go (binary package)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/manish12ys/osm"
+license=('MIT')
+depends=()
+provides=('omarchy-monitor')
+conflicts=('omarchy-monitor' 'omarchy-monitor-git')
+source=()
+sha256sums=()
+
+package() {
+    cd "$startdir"
+    
+    # Check if binary exists, if not build it
+    if [ ! -f "omarchy-monitor" ]; then
+        echo "Binary not found. Building from source..."
+        go build -o omarchy-monitor .
+    fi
+    
+    # Install binary
+    install -Dm755 omarchy-monitor "${pkgdir}/usr/bin/osm"
+    
+    # Install documentation
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    
+    # Install license if it exists
+    if [ -f LICENSE ]; then
+        install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    fi
+}
