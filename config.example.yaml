@@ -1,0 +1,12 @@
+# Omarchy System Monitor Configuration
+# Place this file at: ~/.config/osm/config.yaml
+
+# Theme options: "Omarchy Default", "Cyberpunk", "Retro CRT", "Dracula", "Solarized", "Nord"
+theme: "Omarchy Default"
+
+# Refresh rate in milliseconds (default: 1000)
+refresh_rate: 1000
+
+# Default page to show on startup
+# Options: "procs", "disks", "net", "temp", "gpu", "docker", "cpu", "mem"
+default_page: "procs"

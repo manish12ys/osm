@@ -10,6 +10,7 @@ import (
 // Process represents a single system process
 type Process struct {
 	PID      int32
+	PPID     int32
 	Name     string
 	User     string
 	CPUUsage float64
@@ -29,6 +30,7 @@ func FetchProcesses() ([]Process, error) {
 		// Basic info
 		name, _ := p.Name()
 		user, _ := p.Username()
+		ppid, _ := p.Ppid()
 
 		// CPU & Mem
 		// Note: CPUPercent might need a duration in some versions, or 0 for "since last call"
@@ -40,6 +42,7 @@ func FetchProcesses() ([]Process, error) {
 
 		results = append(results, Process{
 			PID:      p.Pid,
+			PPID:     ppid,
 			Name:     name,
 			User:     user,
 			CPUUsage: cpuP,

@@ -12,7 +12,10 @@ import (
 
 // ProcTableComponent manages the process table view
 type ProcTableComponent struct {
-	Table *tview.Table
+	Table        *tview.Table
+	Filter       string
+	ShowTree     bool
+	SortCallback func(sortType int) // Callback to trigger sorting
 }
 
 // NewProcTableComponent creates a new process table
@@ -32,9 +35,36 @@ func NewProcTableComponent() *ProcTableComponent {
 			SetAlign(alignments[i]))
 	}
 
-	return &ProcTableComponent{
+	comp := &ProcTableComponent{
 		Table: t,
 	}
+
+	// Enable mouse support for header clicks
+	t.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+		if action == tview.MouseLeftClick {
+			clickRow, clickCol := event.Position()
+
+			// Check if clicked on header row
+			x, y, _, _ := t.GetInnerRect()
+			if clickRow == y && comp.SortCallback != nil {
+				// Map column to sort type
+				switch clickCol - x {
+				case 0: // PID column area
+					comp.SortCallback(2) // SortPID
+				case 1: // Name column area
+					comp.SortCallback(3) // SortName
+				case 3: // CPU% column area
+					comp.SortCallback(0) // SortCPU
+				case 4: // Mem% column area
+					comp.SortCallback(1) // SortMem
+				}
+				return action, nil
+			}
+		}
+		return action, event
+	})
+
+	return comp
 }
 
 // ApplyTheme updates the table style
@@ -51,12 +81,82 @@ func (p *ProcTableComponent) ApplyTheme() {
 	}
 }
 
+// TreeNode represents a node in the process tree
+type TreeNode struct {
+	Process  core.Process
+	Children []*TreeNode
+	Level    int
+}
+
 // Update refreshes the process list
 func (p *ProcTableComponent) Update(procs []core.Process) {
 	// We keep the header (row 0), so start clearing from row 1
 	rowCount := p.Table.GetRowCount()
 
-	for i, proc := range procs {
+	var displayProcs []core.Process
+	var displayNames []string // To store indented names
+
+	if p.ShowTree {
+		// Build Tree
+		procMap := make(map[int32]*TreeNode)
+		var roots []*TreeNode
+
+		// 1. Create all nodes
+		for _, proc := range procs {
+			procMap[proc.PID] = &TreeNode{Process: proc}
+		}
+
+		// 2. Build hierarchy
+		for _, proc := range procs {
+			node := procMap[proc.PID]
+			if parent, ok := procMap[proc.PPID]; ok && proc.PPID != 0 && proc.PPID != proc.PID {
+				parent.Children = append(parent.Children, node)
+			} else {
+				roots = append(roots, node)
+			}
+		}
+
+		// 3. Flatten tree to list
+		var flatten func(node *TreeNode, level int)
+		flatten = func(node *TreeNode, level int) {
+			displayProcs = append(displayProcs, node.Process)
+			indent := strings.Repeat("  ", level)
+			prefix := ""
+			if level > 0 {
+				prefix = "└─ "
+			}
+			displayNames = append(displayNames, indent+prefix+node.Process.Name)
+
+			for _, child := range node.Children {
+				flatten(child, level+1)
+			}
+		}
+
+		for _, root := range roots {
+			flatten(root, 0)
+		}
+
+	} else {
+		// Flat View (Filter logic applies here usually, but for now let's keep it simple or re-apply filter)
+		// Filter processes
+		if p.Filter != "" {
+			filterLower := strings.ToLower(p.Filter)
+			for _, proc := range procs {
+				if strings.Contains(strings.ToLower(proc.Name), filterLower) ||
+					strings.Contains(fmt.Sprintf("%d", proc.PID), filterLower) {
+					displayProcs = append(displayProcs, proc)
+					displayNames = append(displayNames, proc.Name)
+				}
+			}
+		} else {
+			displayProcs = procs
+			for _, proc := range procs {
+				displayNames = append(displayNames, proc.Name)
+			}
+		}
+	}
+
+	for i, proc := range displayProcs {
 		row := i + 1 // Skip header
 
 		// Color logic
@@ -68,7 +168,7 @@ func (p *ProcTableComponent) Update(procs []core.Process) {
 		}
 
 		p.setCellAligned(row, 0, fmt.Sprintf("%7d", proc.PID), color, tview.AlignRight)
-		p.setCellAligned(row, 1, proc.Name, CurrentTheme.Foreground, tview.AlignLeft)
+		p.setCellAligned(row, 1, displayNames[i], CurrentTheme.Foreground, tview.AlignLeft)
 		p.setCellAligned(row, 2, proc.User, CurrentTheme.HeaderValue, tview.AlignLeft)
 
 		// CPU with mini bar
@@ -103,8 +203,8 @@ func (p *ProcTableComponent) Update(procs []core.Process) {
 	}
 
 	// Remove stale rows if the new list is shorter
-	if len(procs)+1 < rowCount {
-		for i := rowCount - 1; i > len(procs); i-- {
+	if len(displayProcs)+1 < rowCount {
+		for i := rowCount - 1; i > len(displayProcs); i-- {
 			p.Table.RemoveRow(i)
 		}
 	}

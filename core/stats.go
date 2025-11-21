@@ -19,6 +19,7 @@ type Stats struct {
 	LoadAvg15 float64
 	Hostname  string
 	OS        string
+	Battery   *BatteryStats
 }
 
 // FetchStats gathers current system stats
@@ -40,8 +41,12 @@ func FetchStats() (*Stats, error) {
 
 	l, err := load.Avg()
 	if err != nil {
-		return nil, err
+		// Load Avg might not be supported on all OSs (e.g. Windows)
+		// Use dummy values
+		l = &load.AvgStat{}
 	}
+
+	bat, _ := FetchBatteryStats() // Ignore error if no battery
 
 	cpuVal := 0.0
 	if len(c) > 0 {
@@ -59,6 +64,7 @@ func FetchStats() (*Stats, error) {
 		LoadAvg15: l.Load15,
 		Hostname:  h.Hostname,
 		OS:        h.Platform,
+		Battery:   bat,
 	}, nil
 }
 

@@ -58,6 +58,45 @@ var (
 			MedUsage:    tcell.ColorDarkGreen,
 			LowUsage:    tcell.ColorDarkGreen,
 		},
+		{
+			Name:        "Dracula",
+			Background:  tcell.NewHexColor(0x282a36),
+			Foreground:  tcell.NewHexColor(0xf8f8f2),
+			Border:      tcell.NewHexColor(0xbd93f9), // Purple
+			HeaderTitle: tcell.NewHexColor(0x50fa7b), // Green
+			HeaderValue: tcell.NewHexColor(0xf8f8f2),
+			TableHead:   tcell.NewHexColor(0x8be9fd), // Cyan
+			RowAlt:      tcell.NewHexColor(0x44475a),
+			HighUsage:   tcell.NewHexColor(0xff5555), // Red
+			MedUsage:    tcell.NewHexColor(0xffb86c), // Orange
+			LowUsage:    tcell.NewHexColor(0x50fa7b), // Green
+		},
+		{
+			Name:        "Solarized",
+			Background:  tcell.NewHexColor(0x002b36),
+			Foreground:  tcell.NewHexColor(0x839496),
+			Border:      tcell.NewHexColor(0x2aa198), // Cyan
+			HeaderTitle: tcell.NewHexColor(0x859900), // Green
+			HeaderValue: tcell.NewHexColor(0x93a1a1),
+			TableHead:   tcell.NewHexColor(0xb58900), // Yellow
+			RowAlt:      tcell.NewHexColor(0x073642),
+			HighUsage:   tcell.NewHexColor(0xdc322f), // Red
+			MedUsage:    tcell.NewHexColor(0xcb4b16), // Orange
+			LowUsage:    tcell.NewHexColor(0x859900), // Green
+		},
+		{
+			Name:        "Nord",
+			Background:  tcell.NewHexColor(0x2e3440),
+			Foreground:  tcell.NewHexColor(0xd8dee9),
+			Border:      tcell.NewHexColor(0x88c0d0), // Frost
+			HeaderTitle: tcell.NewHexColor(0xa3be8c), // Green
+			HeaderValue: tcell.NewHexColor(0xeceff4),
+			TableHead:   tcell.NewHexColor(0x81a1c1), // Blue
+			RowAlt:      tcell.NewHexColor(0x3b4252),
+			HighUsage:   tcell.NewHexColor(0xbf616a), // Red
+			MedUsage:    tcell.NewHexColor(0xd08770), // Orange
+			LowUsage:    tcell.NewHexColor(0xa3be8c), // Green
+		},
 	}
 	CurrentTheme = Themes[0]
 	themeIndex   = 0
@@ -68,4 +107,15 @@ func CycleTheme() Theme {
 	themeIndex = (themeIndex + 1) % len(Themes)
 	CurrentTheme = Themes[themeIndex]
 	return CurrentTheme
+}
+
+// SetTheme sets the current theme by name
+func SetTheme(name string) {
+	for i, t := range Themes {
+		if t.Name == name {
+			CurrentTheme = t
+			themeIndex = i
+			return
+		}
+	}
 }

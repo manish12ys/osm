@@ -36,9 +36,20 @@ func (h *HeaderComponent) Update(stats *core.Stats) {
 	text.WriteString("\n")
 
 	// Host and system info line
-	text.WriteString(fmt.Sprintf(" %sHost:%s %s (%s)  %sUptime:%s %dh %dm\n",
+	batStr := ""
+	if stats.Battery != nil {
+		batColor := "[green]"
+		if stats.Battery.Capacity < 20 && stats.Battery.Status == "Discharging" {
+			batColor = "[red]"
+		} else if stats.Battery.Capacity < 50 {
+			batColor = "[yellow]"
+		}
+		batStr = fmt.Sprintf("  %sBat:%s %s%d%% (%s)", cTitle, cValue, batColor, stats.Battery.Capacity, stats.Battery.Status)
+	}
+
+	text.WriteString(fmt.Sprintf(" %sHost:%s %s (%s)  %sUptime:%s %dh %dm%s\n",
 		cTitle, cValue, stats.Hostname, stats.OS,
-		cTitle, cValue, stats.Uptime/3600, (stats.Uptime%3600)/60))
+		cTitle, cValue, stats.Uptime/3600, (stats.Uptime%3600)/60, batStr))
 
 	// CPU line with bar and load average
 	text.WriteString(fmt.Sprintf(" %sCPU:%s  %5.1f%% %s  %sLoad:%s %.2f %.2f %.2f\n",

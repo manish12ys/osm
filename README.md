@@ -4,7 +4,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.25.4-00ADD8?style=for-the-badge&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Linux-orange?style=for-the-badge&logo=linux)](https://www.linux.org/)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-orange?style=for-the-badge)](https://www.linux.org/)
 
 **A beautiful, lightweight terminal-based system monitor built with Go**
 
@@ -24,27 +24,39 @@ Omarchy System Monitor (OSM) is a powerful yet lightweight terminal user interfa
 
 ### 📊 **Comprehensive Monitoring**
 - **Process Management** - View all running processes with CPU, memory usage, and user information
+  - **Tree View** - Hierarchical process view showing parent/child relationships (Press `Shift+T`)
+  - **Search & Filter** - Quickly find processes (Press `/`)
 - **Disk Usage** - Monitor disk I/O statistics and partition usage
 - **Network Statistics** - Track network interface traffic in real-time
 - **Temperature Sensors** - Display system temperature readings
+- **GPU Monitoring** - NVIDIA/AMD GPU usage, VRAM, and temperature stats
+- **Docker Containers** - View and monitor Docker container status
 - **CPU Details** - Per-core CPU usage with historical graphs
 - **Memory Analytics** - Detailed memory usage visualization
+- **Battery Stats** - Battery capacity and charging status (laptops)
 
 ### 🎨 **Beautiful UI**
-- **Multiple Themes** - Choose from Omarchy Default, Cyberpunk, and Retro CRT themes
+- **Multiple Themes** - Choose from 6 themes: Omarchy Default, Cyberpunk, Retro CRT, Dracula, Solarized, and Nord
 - **Real-time Graphs** - Visual history tracking for CPU and memory
 - **Interactive Tables** - Sortable columns for processes (CPU, Memory, PID, Name)
-- **Clean Header** - System overview with hostname, load averages, and uptime
+  - **Mouse Support** - Click on column headers to sort
+- **Clean Header** - System overview with hostname, load averages, uptime, and battery status
+- **Responsive Layout** - Automatically adjusts to terminal size (compact mode for small terminals)
 
 ### ⚡ **Performance**
 - **Lightweight** - Minimal resource footprint
-- **Fast Updates** - 1-second refresh rate for responsive monitoring
+- **Fast Updates** - Configurable refresh rate (default: 1 second)
 - **Efficient** - Modular architecture with separated core logic and UI components
 
-### 🔧 **Process Control**
+### 🔧 **Process Control & Configuration**
 - **Kill Processes** - Terminate processes directly from the monitor
 - **Sorting Options** - Multiple sorting criteria for process list
 - **Interactive Navigation** - Keyboard-driven interface for fast operation
+- **Configuration File** - Persist preferences in `~/.config/osm/config.yaml`
+  - Custom theme selection
+  - Adjustable refresh rate
+  - Default page on startup
+- **Data Export** - Export system snapshots to JSON (Press `e`)
 
 ## 🚀 Installation
 
@@ -137,18 +149,24 @@ The restart script will:
 | `2` | Switch to **Disks** view |
 | `3` | Switch to **Network** view |
 | `4` | Switch to **Temperature** view |
-| `5` | Switch to **CPU Detail** view |
-| `6` | Switch to **Memory Detail** view |
+| `5` | Switch to **GPU** view |
+| `6` | Switch to **Docker Containers** view |
+| `7` | Switch to **CPU Detail** view |
+| `8` | Switch to **Memory Detail** view |
 | `t` | Cycle through themes |
+| `T` | Toggle **Tree View** for processes |
+| `/` | **Search/Filter** processes |
+| `Esc` | Exit search mode |
 | `c` | Sort processes by **CPU** usage |
 | `m` | Sort processes by **Memory** usage |
 | `p` | Sort processes by **PID** |
 | `n` | Sort processes by **Name** |
 | `k` | **Kill** selected process (Processes view only) |
+| `e` | **Export** current system snapshot to JSON |
 
 ## 🎨 Themes
 
-OSM comes with three built-in themes. Press `t` to cycle through them:
+OSM comes with six built-in themes. Press `t` to cycle through them:
 
 ### 1. **Omarchy Default**
 Clean, professional theme with blue borders and traditional colors.
@@ -158,6 +176,33 @@ Neon pink and cyan color scheme for a futuristic look.
 
 ### 3. **Retro CRT**
 Monochromatic green terminal aesthetic reminiscent of classic computing.
+
+### 4. **Dracula**
+Popular dark theme with purple accents and vibrant colors.
+
+### 5. **Solarized**
+Precision colors for machines and people, easy on the eyes.
+
+### 6. **Nord**
+Arctic, north-bluish color palette with frost-inspired tones.
+
+## ⚙️ Configuration
+
+Create a configuration file at `~/.config/osm/config.yaml`:
+
+```yaml
+# Theme options: "Omarchy Default", "Cyberpunk", "Retro CRT", "Dracula", "Solarized", "Nord"
+theme: "Dracula"
+
+# Refresh rate in milliseconds (default: 1000)
+refresh_rate: 1000
+
+# Default page to show on startup
+# Options: "procs", "disks", "net", "temp", "gpu", "docker", "cpu", "mem"
+default_page: "procs"
+```
+
+See `config.example.yaml` for a complete example.
 
 
 ## 🔧 Technical Details
