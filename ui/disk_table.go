@@ -35,14 +35,20 @@ func NewDiskTableComponent() *DiskTableComponent {
 func (d *DiskTableComponent) ApplyTheme() {
 	d.Table.SetBorderColor(CurrentTheme.Border)
 	d.Table.SetTitleColor(CurrentTheme.HeaderTitle)
+	d.Table.SetSelectedStyle(tcell.StyleDefault.Foreground(CurrentTheme.SelectedFg).Background(CurrentTheme.SelectedBg))
 }
 
 func (d *DiskTableComponent) Update(stats []core.DiskStat) {
 	d.Table.Clear()
 
 	// Re-add headers with alignment
-	headers := []string{"Device", "Mount", "FS", "Total", "Used", "Free", "Use%", "Usage"}
-	alignments := []int{tview.AlignLeft, tview.AlignLeft, tview.AlignCenter, tview.AlignRight, tview.AlignRight, tview.AlignRight, tview.AlignRight, tview.AlignLeft}
+	headers := []string{"Device", "Mount", "FS", "Size", "Used", "Free", "Use%", "Usage", "Read", "Write", "IOPS", "Inodes"}
+	alignments := []int{
+		tview.AlignLeft, tview.AlignLeft, tview.AlignCenter,
+		tview.AlignRight, tview.AlignRight, tview.AlignRight,
+		tview.AlignRight, tview.AlignLeft, tview.AlignRight,
+		tview.AlignRight, tview.AlignRight, tview.AlignRight,
+	}
 	for i, h := range headers {
 		d.Table.SetCell(0, i, tview.NewTableCell(h).
 			SetTextColor(CurrentTheme.TableHead).
@@ -55,9 +61,9 @@ func (d *DiskTableComponent) Update(stats []core.DiskStat) {
 		d.setCellAligned(row, 0, s.Device, CurrentTheme.Foreground, tview.AlignLeft)
 		d.setCellAligned(row, 1, s.Mountpoint, CurrentTheme.Foreground, tview.AlignLeft)
 		d.setCellAligned(row, 2, s.Fstype, CurrentTheme.HeaderValue, tview.AlignCenter)
-		d.setCellAligned(row, 3, fmt.Sprintf("%.1f GB", float64(s.Total)/1024/1024/1024), CurrentTheme.Foreground, tview.AlignRight)
-		d.setCellAligned(row, 4, fmt.Sprintf("%.1f GB", float64(s.Used)/1024/1024/1024), CurrentTheme.Foreground, tview.AlignRight)
-		d.setCellAligned(row, 5, fmt.Sprintf("%.1f GB", float64(s.Free)/1024/1024/1024), CurrentTheme.Foreground, tview.AlignRight)
+		d.setCellAligned(row, 3, formatBytes(s.Total), CurrentTheme.Foreground, tview.AlignRight)
+		d.setCellAligned(row, 4, formatBytes(s.Used), CurrentTheme.Foreground, tview.AlignRight)
+		d.setCellAligned(row, 5, formatBytes(s.Free), CurrentTheme.Foreground, tview.AlignRight)
 
 		color := CurrentTheme.LowUsage
 		if s.UsedPercent > 90 {
@@ -68,7 +74,7 @@ func (d *DiskTableComponent) Update(stats []core.DiskStat) {
 		d.setCellAligned(row, 6, fmt.Sprintf("%5.1f%%", s.UsedPercent), color, tview.AlignRight)
 
 		// Add visual bar with gradient
-		barWidth := 25
+		barWidth := 20
 		filled := int((s.UsedPercent / 100.0) * float64(barWidth))
 		if filled > barWidth {
 			filled = barWidth
@@ -80,14 +86,47 @@ func (d *DiskTableComponent) Update(stats []core.DiskStat) {
 				pct := (float64(j) / float64(barWidth)) * 100
 				if pct > 90 {
 					bar.WriteString("█")
+				} else if pct > 70 {
+					bar.WriteString("█")
 				} else {
-					bar.WriteString("▓")
+					bar.WriteString("█")
 				}
 			} else {
-				bar.WriteString("░")
+				bar.WriteString("·")
 			}
 		}
 		d.setCellAligned(row, 7, bar.String(), color, tview.AlignLeft)
+
+		// I/O Statistics
+		readSpeed := formatSpeed(s.ReadSpeed)
+		writeSpeed := formatSpeed(s.WriteSpeed)
+		iops := fmt.Sprintf("%.0f", s.IOPS)
+
+		readColor := CurrentTheme.Foreground
+		if s.ReadSpeed > 100*1024*1024 { // > 100 MB/s
+			readColor = CurrentTheme.LowUsage
+		}
+		writeColor := CurrentTheme.Foreground
+		if s.WriteSpeed > 100*1024*1024 { // > 100 MB/s
+			writeColor = CurrentTheme.LowUsage
+		}
+
+		d.setCellAligned(row, 8, readSpeed, readColor, tview.AlignRight)
+		d.setCellAligned(row, 9, writeSpeed, writeColor, tview.AlignRight)
+		d.setCellAligned(row, 10, iops, CurrentTheme.HeaderValue, tview.AlignRight)
+
+		// Inode usage
+		inodeStr := "-"
+		if s.InodesTotal > 0 {
+			inodeStr = fmt.Sprintf("%.1f%%", s.InodesPercent)
+		}
+		inodeColor := CurrentTheme.Foreground
+		if s.InodesPercent > 90 {
+			inodeColor = CurrentTheme.HighUsage
+		} else if s.InodesPercent > 70 {
+			inodeColor = CurrentTheme.MedUsage
+		}
+		d.setCellAligned(row, 11, inodeStr, inodeColor, tview.AlignRight)
 	}
 	d.ApplyTheme()
 }

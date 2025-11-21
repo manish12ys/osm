@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"omarchy-monitor/core"
 
@@ -34,13 +35,18 @@ func NewNetTableComponent() *NetTableComponent {
 func (n *NetTableComponent) ApplyTheme() {
 	n.Table.SetBorderColor(CurrentTheme.Border)
 	n.Table.SetTitleColor(CurrentTheme.HeaderTitle)
+	n.Table.SetSelectedStyle(tcell.StyleDefault.Foreground(CurrentTheme.SelectedFg).Background(CurrentTheme.SelectedBg))
 }
 
 func (n *NetTableComponent) Update(stats []core.NetStat) {
 	n.Table.Clear()
 
-	headers := []string{"Interface", "Sent", "Received", "Pkts Out", "Pkts In", "Status"}
-	alignments := []int{tview.AlignLeft, tview.AlignRight, tview.AlignRight, tview.AlignRight, tview.AlignRight, tview.AlignCenter}
+	headers := []string{"Interface", "Total Sent", "Total Recv", "↑ Speed", "↓ Speed", "Pkts/s", "Errors", "Drops", "Status"}
+	alignments := []int{
+		tview.AlignLeft, tview.AlignRight, tview.AlignRight,
+		tview.AlignRight, tview.AlignRight, tview.AlignRight,
+		tview.AlignRight, tview.AlignRight, tview.AlignCenter,
+	}
 	for i, h := range headers {
 		n.Table.SetCell(0, i, tview.NewTableCell(h).
 			SetTextColor(CurrentTheme.TableHead).
@@ -55,38 +61,102 @@ func (n *NetTableComponent) Update(stats []core.NetStat) {
 		ifaceColor := CurrentTheme.Foreground
 		n.setCellAligned(row, 0, s.Name, ifaceColor, tview.AlignLeft)
 
-		// Format bytes sent (auto-scale to MB/GB)
-		sentMB := float64(s.BytesSent) / 1024 / 1024
-		sentStr := ""
-		if sentMB > 1024 {
-			sentStr = fmt.Sprintf("%.2f GB", sentMB/1024)
-		} else {
-			sentStr = fmt.Sprintf("%.1f MB", sentMB)
-		}
-		n.setCellAligned(row, 1, sentStr, CurrentTheme.Foreground, tview.AlignRight)
+		// Total bytes sent/received
+		n.setCellAligned(row, 1, formatBytes(s.BytesSent), CurrentTheme.Foreground, tview.AlignRight)
+		n.setCellAligned(row, 2, formatBytes(s.BytesRecv), CurrentTheme.Foreground, tview.AlignRight)
 
-		// Format bytes received (auto-scale to MB/GB)
-		recvMB := float64(s.BytesRecv) / 1024 / 1024
-		recvStr := ""
-		if recvMB > 1024 {
-			recvStr = fmt.Sprintf("%.2f GB", recvMB/1024)
-		} else {
-			recvStr = fmt.Sprintf("%.1f MB", recvMB)
-		}
-		n.setCellAligned(row, 2, recvStr, CurrentTheme.Foreground, tview.AlignRight)
+		// Real-time speeds
+		sendSpeedStr := formatSpeed(s.SendSpeed)
+		recvSpeedStr := formatSpeed(s.RecvSpeed)
 
-		// Packets with formatting
-		n.setCellAligned(row, 3, formatNumber(s.PacketsSent), CurrentTheme.HeaderValue, tview.AlignRight)
-		n.setCellAligned(row, 4, formatNumber(s.PacketsRecv), CurrentTheme.HeaderValue, tview.AlignRight)
-
-		// Status indicator
-		status := "Active"
-		statusColor := CurrentTheme.LowUsage
-		if s.BytesSent == 0 && s.BytesRecv == 0 {
-			status = "Idle"
-			statusColor = tcell.ColorGray
+		sendColor := CurrentTheme.Foreground
+		if s.SendSpeed > 10*1024*1024 { // > 10 MB/s
+			sendColor = CurrentTheme.LowUsage
+		} else if s.SendSpeed > 1*1024*1024 { // > 1 MB/s
+			sendColor = CurrentTheme.HeaderValue
 		}
-		n.setCellAligned(row, 5, status, statusColor, tview.AlignCenter)
+
+		recvColor := CurrentTheme.Foreground
+		if s.RecvSpeed > 10*1024*1024 { // > 10 MB/s
+			recvColor = CurrentTheme.LowUsage
+		} else if s.RecvSpeed > 1*1024*1024 { // > 1 MB/s
+			recvColor = CurrentTheme.HeaderValue
+		}
+
+		n.setCellAligned(row, 3, sendSpeedStr, sendColor, tview.AlignRight)
+		n.setCellAligned(row, 4, recvSpeedStr, recvColor, tview.AlignRight)
+
+		// Packets per second (combined)
+		totalPPS := s.SendPPS + s.RecvPPS
+		ppsStr := "-"
+		if totalPPS > 0 {
+			ppsStr = fmt.Sprintf("%.0f", totalPPS)
+		}
+		n.setCellAligned(row, 5, ppsStr, CurrentTheme.HeaderValue, tview.AlignRight)
+
+		// Errors (combined in/out)
+		totalErrors := s.Errin + s.Errout
+		errStr := "-"
+		errColor := CurrentTheme.Foreground
+		if totalErrors > 0 {
+			errStr = fmt.Sprintf("%d", totalErrors)
+			errColor = CurrentTheme.HighUsage
+		}
+		n.setCellAligned(row, 6, errStr, errColor, tview.AlignRight)
+
+		// Drops (combined in/out)
+		totalDrops := s.Dropin + s.Dropout
+		dropStr := "-"
+		dropColor := CurrentTheme.Foreground
+		if totalDrops > 0 {
+			dropStr = fmt.Sprintf("%d", totalDrops)
+			dropColor = CurrentTheme.MedUsage
+		}
+		n.setCellAligned(row, 7, dropStr, dropColor, tview.AlignRight)
+
+		// Status indicator with activity bar
+		status := "Idle"
+		statusColor := tcell.ColorGray
+		activityBar := ""
+
+		if s.SendSpeed > 0 || s.RecvSpeed > 0 {
+			status = "Active"
+			statusColor = CurrentTheme.LowUsage
+
+			// Create mini activity bar
+			maxSpeed := s.SendSpeed
+			if s.RecvSpeed > maxSpeed {
+				maxSpeed = s.RecvSpeed
+			}
+
+			barWidth := 8
+			if maxSpeed > 0 {
+				var bar strings.Builder
+				bar.WriteString(" [")
+				filled := 0
+				if maxSpeed > 100*1024*1024 { // > 100 MB/s
+					filled = barWidth
+				} else if maxSpeed > 10*1024*1024 { // > 10 MB/s
+					filled = barWidth * 3 / 4
+				} else if maxSpeed > 1*1024*1024 { // > 1 MB/s
+					filled = barWidth / 2
+				} else {
+					filled = barWidth / 4
+				}
+
+				for j := 0; j < barWidth; j++ {
+					if j < filled {
+						bar.WriteString("▮")
+					} else {
+						bar.WriteString("·")
+					}
+				}
+				bar.WriteString("]")
+				activityBar = bar.String()
+			}
+		}
+
+		n.setCellAligned(row, 8, status+activityBar, statusColor, tview.AlignCenter)
 	}
 	n.ApplyTheme()
 }

@@ -39,6 +39,16 @@ func (m *MemDetailComponent) ApplyTheme() {
 func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 	var sb strings.Builder
 
+	// Helper to get color tag
+	cLow := fmt.Sprintf("[#%06x]", CurrentTheme.LowUsage.Hex())
+	cMed := fmt.Sprintf("[#%06x]", CurrentTheme.MedUsage.Hex())
+	cHigh := fmt.Sprintf("[#%06x]", CurrentTheme.HighUsage.Hex())
+	cFore := fmt.Sprintf("[#%06x]", CurrentTheme.Foreground.Hex())
+	cDim := "[darkgray]"
+	cTitle := fmt.Sprintf("[#%06x::b]", CurrentTheme.HeaderTitle.Hex())
+	cLabel := fmt.Sprintf("[#%06x]", CurrentTheme.HeaderValue.Hex())
+	cVal := fmt.Sprintf("[#%06x]", CurrentTheme.HeaderValue.Hex()) // Use HeaderValue for main values
+
 	memData := memHist.GetData()
 	if len(memData) > 0 {
 		current := memData[len(memData)-1]
@@ -60,27 +70,27 @@ func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 		}
 		avg = sum / float64(len(memData))
 
-		sb.WriteString("\n [magenta::b]MEMORY USAGE[white]\n")
+		sb.WriteString(fmt.Sprintf("\n %sMEMORY USAGE%s\n", cTitle, cFore))
 		sb.WriteString(" " + strings.Repeat("─", 78) + "\n\n")
 
-		sb.WriteString(fmt.Sprintf(" [magenta::b]Current:[white] [magenta]%.1f%%[white]  │  [cyan]Min:[white] %.1f%%  │  [yellow]Avg:[white] %.1f%%  │  [red]Max:[white] %.1f%%\n\n",
-			current, min, avg, max))
+		sb.WriteString(fmt.Sprintf(" %sCurrent:%s %s%.1f%%%s  │  %sMin:%s %.1f%%  │  %sAvg:%s %.1f%%  │  %sMax:%s %.1f%%\n\n",
+			cTitle, cFore, cVal, current, cFore, cLabel, cFore, min, cLabel, cFore, avg, cHigh, cFore, max))
 
 		// Enhanced Sparkline with color coding
-		barChars := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
+		barChars := []string{" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 
-		sb.WriteString(" [white]History (60s):[white]\n ")
+		sb.WriteString(fmt.Sprintf(" %sHistory (60s):%s\n ", cFore, cFore))
 		for i, v := range memData {
 			// Color based on value
-			color := "green"
+			color := cLow
 			if v > 85 {
-				color = "red"
+				color = cHigh
 			} else if v > 70 {
-				color = "yellow"
+				color = cMed
 			} else if v > 50 {
-				color = "magenta"
+				color = cVal
 			} else if v > 30 {
-				color = "cyan"
+				color = cLabel
 			}
 
 			idx := int((v / 100.0) * 7)
@@ -90,14 +100,14 @@ func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 			if idx < 0 {
 				idx = 0
 			}
-			sb.WriteString(fmt.Sprintf("[%s]%s", color, barChars[idx]))
+			sb.WriteString(fmt.Sprintf("%s%s", color, barChars[idx]))
 
 			// Add spacing every 10 chars for readability
 			if (i+1)%10 == 0 && i < len(memData)-1 {
-				sb.WriteString("[white] ")
+				sb.WriteString(" ")
 			}
 		}
-		sb.WriteString("[white]\n\n")
+		sb.WriteString(fmt.Sprintf("%s\n\n", cFore))
 
 		// Large progress bar with gradient effect
 		barWidth := 80
@@ -106,27 +116,27 @@ func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 			filled = barWidth
 		}
 
-		sb.WriteString(" [white]")
+		sb.WriteString(fmt.Sprintf(" %s", cFore))
 		for i := 0; i < barWidth; i++ {
 			if i < filled {
 				// Color gradient based on position
 				percent := float64(i) / float64(barWidth) * 100
 				if percent > 85 {
-					sb.WriteString("[red]█")
+					sb.WriteString(fmt.Sprintf("%s█", cHigh))
 				} else if percent > 70 {
-					sb.WriteString("[yellow]█")
+					sb.WriteString(fmt.Sprintf("%s█", cMed))
 				} else if percent > 50 {
-					sb.WriteString("[magenta]█")
+					sb.WriteString(fmt.Sprintf("%s█", cVal))
 				} else if percent > 30 {
-					sb.WriteString("[cyan]█")
+					sb.WriteString(fmt.Sprintf("%s█", cLabel))
 				} else {
-					sb.WriteString("[green]█")
+					sb.WriteString(fmt.Sprintf("%s█", cLow))
 				}
 			} else {
-				sb.WriteString("[darkgray]░")
+				sb.WriteString(fmt.Sprintf("%s·", cDim))
 			}
 		}
-		sb.WriteString("[white]\n")
+		sb.WriteString(fmt.Sprintf("%s\n", cFore))
 		sb.WriteString(" 0%                                                                           100%\n\n")
 	}
 
@@ -137,14 +147,14 @@ func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 		freeGB := totalGB - usedGB
 		availableGB := freeGB // Simplified - in reality would use Available field
 
-		sb.WriteString(" [cyan::b]MEMORY BREAKDOWN[white]\n")
+		sb.WriteString(fmt.Sprintf(" %sMEMORY BREAKDOWN%s\n", cTitle, cFore))
 		sb.WriteString(" " + strings.Repeat("─", 78) + "\n\n")
 
 		// Detailed breakdown
-		sb.WriteString(fmt.Sprintf(" Total:      [white::b]%8.2f GB[white]\n", totalGB))
-		sb.WriteString(fmt.Sprintf(" [magenta]Used:       [magenta::b]%8.2f GB[white]  ([magenta]%.1f%%[white])\n", usedGB, stats.MemUsage))
-		sb.WriteString(fmt.Sprintf(" [green]Free:       [green::b]%8.2f GB[white]  ([green]%.1f%%[white])\n", freeGB, 100-stats.MemUsage))
-		sb.WriteString(fmt.Sprintf(" [cyan]Available:  [cyan::b]%8.2f GB[white]  ([cyan]%.1f%%[white])\n\n", availableGB, (availableGB/totalGB)*100))
+		sb.WriteString(fmt.Sprintf(" Total:      %s%8.2f GB%s\n", cFore, totalGB, cFore))
+		sb.WriteString(fmt.Sprintf(" %sUsed:       %s%8.2f GB%s  (%s%.1f%%%s)\n", cVal, cVal, usedGB, cFore, cVal, stats.MemUsage, cFore))
+		sb.WriteString(fmt.Sprintf(" %sFree:       %s%8.2f GB%s  (%s%.1f%%%s)\n", cLow, cLow, freeGB, cFore, cLow, 100-stats.MemUsage, cFore))
+		sb.WriteString(fmt.Sprintf(" %sAvailable:  %s%8.2f GB%s  (%s%.1f%%%s)\n\n", cLabel, cLabel, availableGB, cFore, cLabel, (availableGB/totalGB)*100, cFore))
 
 		// Enhanced visual breakdown with segments
 		totalWidth := 80
@@ -157,39 +167,39 @@ func (m *MemDetailComponent) Update(memHist *core.History, stats *core.Stats) {
 		for i := 0; i < usedWidth; i++ {
 			percent := float64(i) / float64(usedWidth) * stats.MemUsage
 			if percent > 85 {
-				sb.WriteString("[red]█")
+				sb.WriteString(fmt.Sprintf("%s█", cHigh))
 			} else if percent > 70 {
-				sb.WriteString("[yellow]█")
+				sb.WriteString(fmt.Sprintf("%s█", cMed))
 			} else {
-				sb.WriteString("[magenta]█")
+				sb.WriteString(fmt.Sprintf("%s█", cVal))
 			}
 		}
 
 		// Free portion
-		sb.WriteString("[green]")
+		sb.WriteString(cLow)
 		sb.WriteString(strings.Repeat("█", freeWidth))
-		sb.WriteString("[white]\n")
+		sb.WriteString(fmt.Sprintf("%s\n", cFore))
 
-		sb.WriteString(" [magenta]Used")
+		sb.WriteString(fmt.Sprintf(" %sUsed", cVal))
 		sb.WriteString(strings.Repeat(" ", totalWidth-10))
-		sb.WriteString("[green]Free[white]\n\n")
+		sb.WriteString(fmt.Sprintf("%sFree%s\n\n", cLow, cFore))
 
 		// Memory pressure indicator
 		pressure := "Low"
-		pressureColor := "green"
+		pressureColor := cLow
 
 		if stats.MemUsage > 90 {
 			pressure = "Critical"
-			pressureColor = "red"
+			pressureColor = cHigh
 		} else if stats.MemUsage > 75 {
 			pressure = "High"
-			pressureColor = "yellow"
+			pressureColor = cMed
 		} else if stats.MemUsage > 50 {
 			pressure = "Medium"
-			pressureColor = "cyan"
+			pressureColor = cLabel
 		}
 
-		sb.WriteString(fmt.Sprintf(" Memory Pressure: [%s::b]%s[white]\n", pressureColor, pressure))
+		sb.WriteString(fmt.Sprintf(" Memory Pressure: %s%s%s\n", pressureColor, pressure, cFore))
 	}
 
 	m.View.SetText(sb.String())

@@ -71,6 +71,7 @@ func NewProcTableComponent() *ProcTableComponent {
 func (p *ProcTableComponent) ApplyTheme() {
 	p.Table.SetBorderColor(CurrentTheme.Border)
 	p.Table.SetTitleColor(CurrentTheme.HeaderTitle)
+	p.Table.SetSelectedStyle(tcell.StyleDefault.Foreground(CurrentTheme.SelectedFg).Background(CurrentTheme.SelectedBg))
 
 	// Update header row color
 	for i := 0; i < p.Table.GetColumnCount(); i++ {
@@ -210,23 +211,6 @@ func (p *ProcTableComponent) Update(procs []core.Process) {
 	}
 
 	p.ApplyTheme() // Re-apply theme to ensure borders/headers are correct
-}
-
-func makeMiniBar(percent float64, width int) string {
-	filled := int((percent / 100.0) * float64(width))
-	if filled > width {
-		filled = width
-	}
-
-	bar := ""
-	for i := 0; i < width; i++ {
-		if i < filled {
-			bar += "▪"
-		} else {
-			bar += "·"
-		}
-	}
-	return bar
 }
 
 func (p *ProcTableComponent) setCell(row, col int, text string, color tcell.Color) {

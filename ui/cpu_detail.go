@@ -39,6 +39,16 @@ func (c *CPUDetailComponent) ApplyTheme() {
 func (c *CPUDetailComponent) Update(cpuHist *core.History, perCoreUsage []float64) {
 	var sb strings.Builder
 
+	// Helper to get color tag
+	cLow := fmt.Sprintf("[#%06x]", CurrentTheme.LowUsage.Hex())
+	cMed := fmt.Sprintf("[#%06x]", CurrentTheme.MedUsage.Hex())
+	cHigh := fmt.Sprintf("[#%06x]", CurrentTheme.HighUsage.Hex())
+	cCrit := fmt.Sprintf("[#%06x]", CurrentTheme.HighUsage.Hex()) // Use High for Critical for now, or add Critical to theme
+	cFore := fmt.Sprintf("[#%06x]", CurrentTheme.Foreground.Hex())
+	cDim := "[darkgray]" // Keep darkgray for background bars or use a specific theme color if available
+	cTitle := fmt.Sprintf("[#%06x::b]", CurrentTheme.HeaderTitle.Hex())
+	cLabel := fmt.Sprintf("[#%06x]", CurrentTheme.HeaderValue.Hex())
+
 	// Overall CPU usage with sparkline
 	cpuData := cpuHist.GetData()
 	if len(cpuData) > 0 {
@@ -61,25 +71,25 @@ func (c *CPUDetailComponent) Update(cpuHist *core.History, perCoreUsage []float6
 		}
 		avg = sum / float64(len(cpuData))
 
-		sb.WriteString("\n [green::b]CPU TOTAL USAGE[white]\n")
+		sb.WriteString(fmt.Sprintf("\n %sCPU TOTAL USAGE%s\n", cTitle, cFore))
 		sb.WriteString(" " + strings.Repeat("─", 78) + "\n\n")
 
-		sb.WriteString(fmt.Sprintf(" [green::b]Current:[white] [green]%.1f%%[white]  │  [cyan]Min:[white] %.1f%%  │  [yellow]Avg:[white] %.1f%%  │  [red]Max:[white] %.1f%%\n\n",
-			current, min, avg, max))
+		sb.WriteString(fmt.Sprintf(" %sCurrent:%s %s%.1f%%%s  │  %sMin:%s %.1f%%  │  %sAvg:%s %.1f%%  │  %sMax:%s %.1f%%\n\n",
+			cTitle, cFore, cLow, current, cFore, cLabel, cFore, min, cLabel, cFore, avg, cCrit, cFore, max))
 
 		// Enhanced Sparkline with better resolution
-		barChars := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
+		barChars := []string{" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 
-		sb.WriteString(" [white]History (60s):[white]\n ")
+		sb.WriteString(fmt.Sprintf(" %sHistory (60s):%s\n ", cFore, cFore))
 		for i, v := range cpuData {
 			// Color based on value
-			color := "green"
+			color := cLow
 			if v > 80 {
-				color = "red"
+				color = cCrit
 			} else if v > 60 {
-				color = "yellow"
+				color = cHigh // Use High for > 60
 			} else if v > 40 {
-				color = "cyan"
+				color = cMed
 			}
 
 			idx := int((v / 100.0) * 7)
@@ -89,14 +99,14 @@ func (c *CPUDetailComponent) Update(cpuHist *core.History, perCoreUsage []float6
 			if idx < 0 {
 				idx = 0
 			}
-			sb.WriteString(fmt.Sprintf("[%s]%s", color, barChars[idx]))
+			sb.WriteString(fmt.Sprintf("%s%s", color, barChars[idx]))
 
 			// Add spacing every 10 chars for readability
 			if (i+1)%10 == 0 && i < len(cpuData)-1 {
-				sb.WriteString("[white] ")
+				sb.WriteString(" ")
 			}
 		}
-		sb.WriteString("[white]\n\n")
+		sb.WriteString(fmt.Sprintf("%s\n\n", cFore))
 
 		// Large progress bar with gradient effect
 		barWidth := 80
@@ -105,41 +115,41 @@ func (c *CPUDetailComponent) Update(cpuHist *core.History, perCoreUsage []float6
 			filled = barWidth
 		}
 
-		sb.WriteString(" [white]")
+		sb.WriteString(fmt.Sprintf(" %s", cFore))
 		for i := 0; i < barWidth; i++ {
 			if i < filled {
 				// Color gradient based on position
 				percent := float64(i) / float64(barWidth) * 100
 				if percent > 80 {
-					sb.WriteString("[red]█")
+					sb.WriteString(fmt.Sprintf("%s█", cCrit))
 				} else if percent > 60 {
-					sb.WriteString("[yellow]█")
+					sb.WriteString(fmt.Sprintf("%s█", cHigh))
 				} else if percent > 40 {
-					sb.WriteString("[cyan]█")
+					sb.WriteString(fmt.Sprintf("%s█", cMed))
 				} else {
-					sb.WriteString("[green]█")
+					sb.WriteString(fmt.Sprintf("%s█", cLow))
 				}
 			} else {
-				sb.WriteString("[darkgray]░")
+				sb.WriteString(fmt.Sprintf("%s·", cDim))
 			}
 		}
-		sb.WriteString("[white]\n")
+		sb.WriteString(fmt.Sprintf("%s\n", cFore))
 		sb.WriteString(" 0%                                                                           100%\n\n")
 	}
 
 	// Per-core usage with enhanced visualization
 	if len(perCoreUsage) > 0 {
-		sb.WriteString(" [cyan::b]PER-CORE USAGE[white]\n")
+		sb.WriteString(fmt.Sprintf(" %sPER-CORE USAGE%s\n", cTitle, cFore))
 		sb.WriteString(" " + strings.Repeat("─", 78) + "\n\n")
 
 		for i, usage := range perCoreUsage {
-			color := "green"
+			color := cLow
 			if usage > 80 {
-				color = "red"
+				color = cCrit
 			} else if usage > 60 {
-				color = "yellow"
+				color = cHigh
 			} else if usage > 40 {
-				color = "cyan"
+				color = cMed
 			}
 
 			barWidth := 60
@@ -148,29 +158,30 @@ func (c *CPUDetailComponent) Update(cpuHist *core.History, perCoreUsage []float6
 				filled = barWidth
 			}
 
-			sb.WriteString(fmt.Sprintf(" Core %-2d [%s::b]%6.1f%%[white] │ ", i, color, usage))
+			sb.WriteString(fmt.Sprintf(" Core %-2d %s%6.1f%%%s │ ", i, color, usage, cFore))
 
 			// Gradient bar
 			for j := 0; j < barWidth; j++ {
 				if j < filled {
 					percent := float64(j) / float64(barWidth) * 100
 					if percent > 80 {
-						sb.WriteString("[red]█")
+						sb.WriteString(fmt.Sprintf("%s█", cCrit))
 					} else if percent > 60 {
-						sb.WriteString("[yellow]█")
+						sb.WriteString(fmt.Sprintf("%s█", cHigh))
 					} else if percent > 40 {
-						sb.WriteString("[cyan]█")
+						sb.WriteString(fmt.Sprintf("%s█", cMed))
 					} else {
-						sb.WriteString("[green]█")
+						sb.WriteString(fmt.Sprintf("%s█", cLow))
 					}
 				} else {
-					sb.WriteString("[darkgray]░")
+					sb.WriteString(fmt.Sprintf("%s░", cDim))
 				}
 			}
-			sb.WriteString("[white]\n")
+			sb.WriteString(fmt.Sprintf("%s\n", cFore))
 		}
 
-		sb.WriteString("\n [darkgray]Legend: [green]Low[white] | [cyan]Medium[white] | [yellow]High[white] | [red]Critical[white]\n")
+		sb.WriteString(fmt.Sprintf("\n %sLegend: %sLow%s | %sMedium%s | %sHigh%s | %sCritical%s\n",
+			cDim, cLow, cFore, cMed, cFore, cHigh, cFore, cCrit, cFore))
 	}
 
 	c.View.SetText(sb.String())

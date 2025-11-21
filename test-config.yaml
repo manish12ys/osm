@@ -3,8 +3,8 @@
 # Theme
 theme: "Dracula"
 
-# Refresh rate in milliseconds
-refresh_rate: 1000
+# Refresh rate in milliseconds (2000ms = 2 seconds for better performance)
+refresh_rate: 2000
 
 # Default page
 default_page: "procs"

@@ -47,19 +47,19 @@ func (h *HeaderComponent) Update(stats *core.Stats) {
 		batStr = fmt.Sprintf("  %sBat:%s %s%d%% (%s)", cTitle, cValue, batColor, stats.Battery.Capacity, stats.Battery.Status)
 	}
 
-	text.WriteString(fmt.Sprintf(" %sHost:%s %s (%s)  %sUptime:%s %dh %dm%s\n",
-		cTitle, cValue, stats.Hostname, stats.OS,
-		cTitle, cValue, stats.Uptime/3600, (stats.Uptime%3600)/60, batStr))
+	// Simplified Header Layout
+	// Line 1: Hostname | OS | Battery (if present)
+	text.WriteString(fmt.Sprintf(" %sHost:%s %s (%s)%s\n",
+		cTitle, cValue, stats.Hostname, stats.OS, batStr))
 
-	// CPU line with bar and load average
-	text.WriteString(fmt.Sprintf(" %sCPU:%s  %5.1f%% %s  %sLoad:%s %.2f %.2f %.2f\n",
-		cTitle, cValue, stats.CPUUsage, cpuBar,
-		cTitle, cValue, stats.LoadAvg1, stats.LoadAvg5, stats.LoadAvg15))
+	// Line 2: CPU Usage Bar
+	text.WriteString(fmt.Sprintf(" %sCPU:%s  %5.1f%% %s\n",
+		cTitle, cValue, stats.CPUUsage, cpuBar))
 
-	// Memory line with bar and usage
-	text.WriteString(fmt.Sprintf(" %sMEM:%s  %5.1f%% %s  %sUsed:%s %d / %d MB\n",
+	// Line 3: Memory Usage Bar + Details
+	text.WriteString(fmt.Sprintf(" %sMEM:%s  %5.1f%% %s  %s(%d/%d MB)\n",
 		cTitle, cValue, stats.MemUsage, memBar,
-		cTitle, cValue, stats.MemUsed/1024/1024, stats.MemTotal/1024/1024))
+		cValue, stats.MemUsed/1024/1024, stats.MemTotal/1024/1024))
 
 	h.View.SetText(text.String())
 	h.View.SetBorderColor(CurrentTheme.Border)
@@ -80,16 +80,16 @@ func makeEnhancedBar(percent float64, width int) string {
 			// Color based on percentage
 			currentPercent := (float64(i) / float64(width)) * 100
 			if currentPercent > 80 {
-				bar.WriteString("[red]█")
+				bar.WriteString(fmt.Sprintf("[#%06x]█", CurrentTheme.HighUsage.Hex()))
 			} else if currentPercent > 60 {
-				bar.WriteString("[yellow]█")
+				bar.WriteString(fmt.Sprintf("[#%06x]█", CurrentTheme.MedUsage.Hex()))
 			} else if currentPercent > 40 {
-				bar.WriteString("[cyan]█")
+				bar.WriteString(fmt.Sprintf("[#%06x]█", CurrentTheme.TableHead.Hex())) // Use TableHead (often cyan/yellow) for mid-low
 			} else {
-				bar.WriteString("[green]█")
+				bar.WriteString(fmt.Sprintf("[#%06x]█", CurrentTheme.LowUsage.Hex()))
 			}
 		} else {
-			bar.WriteString("[darkgray]░")
+			bar.WriteString(fmt.Sprintf("[#%06x]·", CurrentTheme.RowAlt.Hex()))
 		}
 	}
 	bar.WriteString("[white]")

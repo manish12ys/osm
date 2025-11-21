@@ -26,6 +26,7 @@ type AppLayout struct {
 	Remote      *RemoteComponent
 	CPUDetail   *CPUDetailComponent
 	MemDetail   *MemDetailComponent
+	Help        *HelpComponent
 	ActivePage  string
 }
 
@@ -62,13 +63,13 @@ func (l *AppLayout) AdjustLayout() {
 	// Adjust footer text based on width
 	if width < 80 {
 		// Compact footer for narrow terminals
-		l.Footer.SetText(" q:Quit | 1-9,0:Views | t:Theme | /:Search | e:Export ")
+		l.Footer.SetText(" q:Quit | 1-9,0:Views | t:Theme | /:Search | ?:Help ")
 	} else if width < 120 {
 		// Medium footer
-		l.Footer.SetText(" q:Quit | 1:Procs 2:Disks 3:Net 4:Temp 5:GPU 6:Docker 7:CPU 8:Mem 9:Plugins 0:Remote | t:Theme ")
+		l.Footer.SetText(" q:Quit | 1:Procs 2:Disks 3:Net 4:Temp 5:GPU 6:Docker 7:CPU 8:Mem 9:Plugins 0:Remote | t:Theme | ?:Help ")
 	} else {
 		// Full footer
-		l.Footer.SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export ")
+		l.Footer.SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export | ?: Help ")
 	}
 }
 
@@ -92,7 +93,7 @@ func NewAppLayout(remoteURL string) *AppLayout {
 	// Footer
 	footer := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export ")
+		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export | ?: Help ")
 	footer.SetBorder(true)
 
 	// Components
@@ -121,6 +122,8 @@ func NewAppLayout(remoteURL string) *AppLayout {
 
 	memDetailComp := NewMemDetailComponent()
 
+	helpComp := NewHelpComponent()
+
 	// Pages
 	pages := tview.NewPages()
 	pages.AddPage("procs", procTableComp.Table, true, true)
@@ -133,6 +136,7 @@ func NewAppLayout(remoteURL string) *AppLayout {
 	pages.AddPage("remote", remoteComp.Flex, true, false)
 	pages.AddPage("cpu", cpuDetailComp.Flex, true, false)
 	pages.AddPage("mem", memDetailComp.Flex, true, false)
+	pages.AddPage("help", helpComp.Flex, true, false)
 
 	// Middle Flex (Pages + SearchBar)
 	middleFlex := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -163,7 +167,15 @@ func NewAppLayout(remoteURL string) *AppLayout {
 		Remote:      remoteComp,
 		CPUDetail:   cpuDetailComp,
 		MemDetail:   memDetailComp,
+		Help:        helpComp,
 	}
+
+	// Set help done func to close help
+	// Set help done func to close help
+	helpComp.SetDoneFunc(func() {
+		l.ToggleHelp(false)
+	})
+
 	l.ApplyTheme()
 	return l
 }
@@ -179,6 +191,41 @@ func (l *AppLayout) ToggleSearchBar(show bool) {
 		l.MiddleFlex.RemoveItem(l.SearchBar)
 		l.App.SetFocus(l.ProcTable.Table)
 		l.SearchBar.SetText("") // Clear text when hiding
+	}
+}
+
+// ToggleHelp shows or hides the help modal
+func (l *AppLayout) ToggleHelp(show bool) {
+	if show {
+		l.Pages.ShowPage("help")
+		l.App.SetFocus(l.Help.Table)
+	} else {
+		l.Pages.HidePage("help")
+		// Restore focus to active page
+		switch l.ActivePage {
+		case "procs":
+			l.App.SetFocus(l.ProcTable.Table)
+		case "disks":
+			l.App.SetFocus(l.DiskTable.Table)
+		case "net":
+			l.App.SetFocus(l.NetTable.Table)
+		case "temp":
+			l.App.SetFocus(l.Temp.Flex)
+		case "gpu":
+			l.App.SetFocus(l.GPU.Table)
+		case "docker":
+			l.App.SetFocus(l.DockerTable.Table)
+		case "cpu":
+			l.App.SetFocus(l.CPUDetail.Flex)
+		case "mem":
+			l.App.SetFocus(l.MemDetail.Flex)
+		case "plugins":
+			l.App.SetFocus(l.Plugins.Flex)
+		case "remote":
+			l.App.SetFocus(l.Remote.Flex)
+		default:
+			l.App.SetFocus(l.ProcTable.Table)
+		}
 	}
 }
 
@@ -217,6 +264,7 @@ func (l *AppLayout) ApplyTheme() {
 	l.Remote.ApplyTheme()
 	l.CPUDetail.ApplyTheme()
 	l.MemDetail.ApplyTheme()
+	l.Help.ApplyTheme()
 }
 
 // Run starts the application

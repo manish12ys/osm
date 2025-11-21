@@ -56,8 +56,11 @@ func main() {
 	// Initialize plugin manager if enabled
 	var pluginManager *plugins.Manager
 	if cfg != nil && cfg.PluginsEnabled {
-		home, _ := os.UserHomeDir()
-		pluginsDir := filepath.Join(home, ".config", "osm", "plugins")
+		// Use local plugins directory for development/portability
+		wd, _ := os.Getwd()
+		pluginsDir := filepath.Join(wd, "plugins")
+		// Fallback to config dir if local doesn't exist or we want to support both?
+		// For now, let's stick to local project plugins dir as requested by environment constraints
 		pluginManager = plugins.NewManager(pluginsDir)
 		pluginManager.LoadPlugins()
 
@@ -97,6 +100,18 @@ func main() {
 
 	// Input handling
 	layout.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Check if help is currently visible
+		helpVisible := false
+		if name, _ := layout.Pages.GetFrontPage(); name == "help" {
+			helpVisible = true
+		}
+
+		// If help is visible, handle Esc to close it
+		if helpVisible && event.Key() == tcell.KeyEsc {
+			layout.ToggleHelp(false)
+			return nil
+		}
+
 		// If search bar is focused, handle specific keys
 		if layout.SearchBar.HasFocus() {
 			if event.Key() == tcell.KeyEsc {
@@ -205,13 +220,26 @@ func main() {
 			} else {
 				layout.ShowFlashMessage(fmt.Sprintf("Exported to %s", filename))
 			}
+		case '?':
+			layout.ToggleHelp(true)
+			return nil
 		}
 		return event
 	})
 
 	// Stats loop
 	go func() {
-		for {
+		ticker := time.NewTicker(2 * time.Second) // Default 2 seconds
+		defer ticker.Stop()
+
+		// Apply custom refresh rate if configured
+		if cfg != nil && cfg.RefreshRate > 0 {
+			ticker.Reset(time.Duration(cfg.RefreshRate) * time.Millisecond)
+		}
+
+		layoutCounter := 0 // Counter for layout adjustments
+
+		for range ticker.C {
 			stats, err := core.FetchStats()
 			if err != nil {
 				continue
@@ -221,15 +249,18 @@ func main() {
 			cpuHistory.Add(stats.CPUUsage)
 			memHistory.Add(stats.MemUsage)
 
-			// Adjust layout for responsive design
-			layout.AdjustLayout()
+			// Only adjust layout occasionally (every ~6 seconds) to reduce overhead
+			layoutCounter++
+			if layoutCounter%3 == 0 { // Every ~6 seconds with 2s refresh
+				layout.AdjustLayout()
+			}
 
-			// Fetch per-core CPU for detail page
+			// Fetch per-core CPU only when on CPU page
 			if activePage == "cpu" {
 				perCoreUsage, _ = core.FetchPerCoreCPU()
 			}
 
-			// Fetch data based on active page
+			// Fetch data based on active page ONLY
 			var procs []core.Process
 			var disks []core.DiskStat
 			var nets []core.NetStat
@@ -238,62 +269,67 @@ func main() {
 			var containers []core.ContainerStat
 			var pluginResults map[string]*plugins.PluginOutput
 
-			if activePage == "procs" {
-				var err error
+			// Only fetch data for the currently active page
+			switch activePage {
+			case "procs":
 				procs, err = core.FetchProcesses()
-				if err != nil {
-					// Handle error
+				if err == nil {
+					core.SortProcesses(procs, currentSort)
+					lastProcs = procs // Update cache
 				}
-				core.SortProcesses(procs, currentSort)
-				lastProcs = procs // Update cache
-			} else if activePage == "disks" {
+			case "disks":
 				disks, _ = core.FetchDiskStats()
-			} else if activePage == "net" {
+			case "net":
 				nets, _ = core.FetchNetStats()
-			} else if activePage == "temp" {
-				// Fetch temps
+			case "temp":
 				temps, _ = core.FetchTemps()
-			} else if activePage == "gpu" {
+			case "gpu":
 				gpus, _ = core.FetchGPUStats()
-			} else if activePage == "docker" {
+			case "docker":
 				containers, _ = core.FetchContainers()
-			} else if activePage == "plugins" && pluginManager != nil {
-				pluginResults = pluginManager.ExecuteAll()
-			} else if activePage == "remote" {
-				// Remote monitoring doesn't need to fetch local data
+			case "plugins":
+				if pluginManager != nil {
+					pluginResults = pluginManager.ExecuteAll()
+				}
+			case "help":
+				// No data fetching needed for help page
+				continue
 			}
 
 			layout.App.QueueUpdateDraw(func() {
 				layout.Header.Update(stats)
 
-				if activePage == "procs" && procs != nil {
-					layout.ProcTable.Update(procs)
-				} else if activePage == "disks" && disks != nil {
-					layout.DiskTable.Update(disks)
-				} else if activePage == "net" && nets != nil {
-					layout.NetTable.Update(nets)
-				} else if activePage == "temp" {
+				switch activePage {
+				case "procs":
+					if procs != nil {
+						layout.ProcTable.Update(procs)
+					}
+				case "disks":
+					if disks != nil {
+						layout.DiskTable.Update(disks)
+					}
+				case "net":
+					if nets != nil {
+						layout.NetTable.Update(nets)
+					}
+				case "temp":
 					layout.Temp.Update(temps)
-				} else if activePage == "gpu" {
+				case "gpu":
 					layout.GPU.Update(gpus)
-				} else if activePage == "docker" {
+				case "docker":
 					layout.DockerTable.Update(containers)
-				} else if activePage == "plugins" && pluginResults != nil {
-					layout.Plugins.Update(pluginResults)
-				} else if activePage == "remote" {
+				case "plugins":
+					if pluginResults != nil {
+						layout.Plugins.Update(pluginResults)
+					}
+				case "remote":
 					layout.Remote.Update()
-				} else if activePage == "cpu" {
+				case "cpu":
 					layout.CPUDetail.Update(cpuHistory, perCoreUsage)
-				} else if activePage == "mem" {
+				case "mem":
 					layout.MemDetail.Update(memHistory, stats)
 				}
 			})
-
-			sleepDuration := 1000 * time.Millisecond
-			if cfg != nil && cfg.RefreshRate > 0 {
-				sleepDuration = time.Duration(cfg.RefreshRate) * time.Millisecond
-			}
-			time.Sleep(sleepDuration)
 		}
 	}()
 

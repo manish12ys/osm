@@ -15,6 +15,8 @@ type Theme struct {
 	HighUsage   tcell.Color
 	MedUsage    tcell.Color
 	LowUsage    tcell.Color
+	SelectedFg  tcell.Color
+	SelectedBg  tcell.Color
 }
 
 var (
@@ -31,6 +33,8 @@ var (
 			HighUsage:   tcell.ColorRed,
 			MedUsage:    tcell.ColorOrange,
 			LowUsage:    tcell.ColorGreen,
+			SelectedFg:  tcell.ColorBlack,
+			SelectedBg:  tcell.ColorGreen,
 		},
 		{
 			Name:        "Cyberpunk",
@@ -44,6 +48,8 @@ var (
 			HighUsage:   tcell.ColorRed,
 			MedUsage:    tcell.ColorYellow,
 			LowUsage:    tcell.ColorGreen,
+			SelectedFg:  tcell.ColorBlack,
+			SelectedBg:  tcell.NewHexColor(0x00FFFF),
 		},
 		{
 			Name:        "Retro CRT",
@@ -57,6 +63,8 @@ var (
 			HighUsage:   tcell.ColorGreen, // Monochromatic feel
 			MedUsage:    tcell.ColorDarkGreen,
 			LowUsage:    tcell.ColorDarkGreen,
+			SelectedFg:  tcell.ColorBlack,
+			SelectedBg:  tcell.ColorGreen,
 		},
 		{
 			Name:        "Dracula",
@@ -70,6 +78,8 @@ var (
 			HighUsage:   tcell.NewHexColor(0xff5555), // Red
 			MedUsage:    tcell.NewHexColor(0xffb86c), // Orange
 			LowUsage:    tcell.NewHexColor(0x50fa7b), // Green
+			SelectedFg:  tcell.NewHexColor(0x282a36),
+			SelectedBg:  tcell.NewHexColor(0xbd93f9),
 		},
 		{
 			Name:        "Solarized",
@@ -83,6 +93,8 @@ var (
 			HighUsage:   tcell.NewHexColor(0xdc322f), // Red
 			MedUsage:    tcell.NewHexColor(0xcb4b16), // Orange
 			LowUsage:    tcell.NewHexColor(0x859900), // Green
+			SelectedFg:  tcell.NewHexColor(0x002b36),
+			SelectedBg:  tcell.NewHexColor(0x2aa198),
 		},
 		{
 			Name:        "Nord",
@@ -96,10 +108,42 @@ var (
 			HighUsage:   tcell.NewHexColor(0xbf616a), // Red
 			MedUsage:    tcell.NewHexColor(0xd08770), // Orange
 			LowUsage:    tcell.NewHexColor(0xa3be8c), // Green
+			SelectedFg:  tcell.NewHexColor(0x2e3440),
+			SelectedBg:  tcell.NewHexColor(0x88c0d0),
+		},
+		{
+			Name:        "Neon Night",
+			Background:  tcell.NewHexColor(0x0a0a12), // Very dark blue/black
+			Foreground:  tcell.NewHexColor(0x00ff99), // Bright Mint Green
+			Border:      tcell.NewHexColor(0xbd00ff), // Electric Purple
+			HeaderTitle: tcell.NewHexColor(0x00ffff), // Cyan
+			HeaderValue: tcell.NewHexColor(0xff00cc), // Magenta
+			TableHead:   tcell.NewHexColor(0xffcc00), // Gold/Yellow
+			RowAlt:      tcell.NewHexColor(0x11111b), // Slightly lighter bg
+			HighUsage:   tcell.NewHexColor(0xff0033), // Bright Red
+			MedUsage:    tcell.NewHexColor(0xff9900), // Bright Orange
+			LowUsage:    tcell.NewHexColor(0x00ff99), // Mint Green
+			SelectedFg:  tcell.NewHexColor(0x0a0a12),
+			SelectedBg:  tcell.NewHexColor(0x00ff99),
+		},
+		{
+			Name:        "Modern Dark",
+			Background:  tcell.NewHexColor(0x1e1e2e), // Catppuccin Mocha Base
+			Foreground:  tcell.NewHexColor(0xcdd6f4), // Text
+			Border:      tcell.NewHexColor(0x89b4fa), // Blue
+			HeaderTitle: tcell.NewHexColor(0xcba6f7), // Mauve
+			HeaderValue: tcell.NewHexColor(0xf5e0dc), // Rosewater
+			TableHead:   tcell.NewHexColor(0x89b4fa), // Blue
+			RowAlt:      tcell.NewHexColor(0x313244), // Surface 0
+			HighUsage:   tcell.NewHexColor(0xf38ba8), // Red
+			MedUsage:    tcell.NewHexColor(0xf9e2af), // Yellow
+			LowUsage:    tcell.NewHexColor(0xa6e3a1), // Green
+			SelectedFg:  tcell.NewHexColor(0x1e1e2e), // Dark background for text
+			SelectedBg:  tcell.NewHexColor(0xcba6f7), // Mauve background for selection
 		},
 	}
-	CurrentTheme = Themes[0]
-	themeIndex   = 0
+	CurrentTheme = Themes[len(Themes)-1] // Set Modern Dark as default
+	themeIndex   = len(Themes) - 1
 )
 
 // CycleTheme switches to the next available theme

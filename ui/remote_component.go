@@ -56,14 +56,22 @@ func (r *RemoteComponent) ApplyTheme() {
 }
 
 func (r *RemoteComponent) Update() {
+	// Helper to get color tag
+	cLow := fmt.Sprintf("[#%06x]", CurrentTheme.LowUsage.Hex())
+	cMed := fmt.Sprintf("[#%06x]", CurrentTheme.MedUsage.Hex())
+	cHigh := fmt.Sprintf("[#%06x]", CurrentTheme.HighUsage.Hex())
+	cFore := fmt.Sprintf("[#%06x]", CurrentTheme.Foreground.Hex())
+	cDim := "[darkgray]"
+	cLabel := fmt.Sprintf("[#%06x]", CurrentTheme.HeaderValue.Hex())
+
 	if r.Client == nil {
 		r.StatusView.Clear()
-		fmt.Fprintf(r.StatusView, "[red]✗ Not Configured[-]")
+		fmt.Fprintf(r.StatusView, "%s✗ Not Configured[-]", cHigh)
 		r.StatsView.Clear()
-		fmt.Fprintf(r.StatsView, "[yellow]Remote monitoring not configured[-]\n\n")
+		fmt.Fprintf(r.StatsView, "%sRemote monitoring not configured[-]\n\n", cMed)
 		fmt.Fprintf(r.StatsView, "To enable remote monitoring, add to config.yaml:\n\n")
-		fmt.Fprintf(r.StatsView, "[cyan]remote_mode: true[-]\n")
-		fmt.Fprintf(r.StatsView, "[cyan]remote_url: \"http://192.168.1.100:8080\"[-]\n")
+		fmt.Fprintf(r.StatsView, "%sremote_mode: true[-]\n", cLabel)
+		fmt.Fprintf(r.StatsView, "%sremote_url: \"http://192.168.1.100:8080\"[-]\n", cLabel)
 		return
 	}
 
@@ -71,11 +79,11 @@ func (r *RemoteComponent) Update() {
 	if err != nil {
 		r.Connected = false
 		r.StatusView.Clear()
-		fmt.Fprintf(r.StatusView, "[red]✗ Disconnected[-] - %v", err)
+		fmt.Fprintf(r.StatusView, "%s✗ Disconnected[-] - %v", cHigh, err)
 		r.StatsView.Clear()
-		fmt.Fprintf(r.StatsView, "[red]Failed to connect to remote server[-]\n\n")
-		fmt.Fprintf(r.StatsView, "[gray]URL: %s[-]\n", r.Client.BaseURL)
-		fmt.Fprintf(r.StatsView, "[gray]Error: %v[-]\n", err)
+		fmt.Fprintf(r.StatsView, "%sFailed to connect to remote server[-]\n\n", cHigh)
+		fmt.Fprintf(r.StatsView, "%sURL: %s[-]\n", cDim, r.Client.BaseURL)
+		fmt.Fprintf(r.StatsView, "%sError: %v[-]\n", cDim, err)
 		return
 	}
 
@@ -84,35 +92,35 @@ func (r *RemoteComponent) Update() {
 
 	// Update status
 	r.StatusView.Clear()
-	fmt.Fprintf(r.StatusView, "[green]✓ Connected[-] to [cyan]%s[-] | Last Update: [white]%s[-]",
-		stats.Hostname, r.LastUpdate.Format("15:04:05"))
+	fmt.Fprintf(r.StatusView, "%s✓ Connected[-] to %s%s[-] | Last Update: %s%s[-]",
+		cLow, cLabel, stats.Hostname, cFore, r.LastUpdate.Format("15:04:05"))
 
 	// Update stats view
 	r.StatsView.Clear()
 
 	// System Overview
-	fmt.Fprintf(r.StatsView, "[yellow]═══ REMOTE SYSTEM: %s ═══[-]\n\n", stats.Hostname)
+	fmt.Fprintf(r.StatsView, "%s═══ REMOTE SYSTEM: %s ═══[-]\n\n", cMed, stats.Hostname)
 
 	if stats.Stats != nil {
-		fmt.Fprintf(r.StatsView, "[cyan]CPU Usage:[-]     [white]%.1f%%[-]\n", stats.Stats.CPUUsage)
-		fmt.Fprintf(r.StatsView, "[cyan]Memory Usage:[-]  [white]%.1f%%[-] ([white]%s[-] / [white]%s[-])\n",
-			stats.Stats.MemUsage, formatBytes(stats.Stats.MemUsed), formatBytes(stats.Stats.MemTotal))
-		fmt.Fprintf(r.StatsView, "[cyan]Uptime:[-]        [white]%s[-]\n", formatUptime(stats.Stats.Uptime))
-		fmt.Fprintf(r.StatsView, "[cyan]Load Average:[-]  [white]%.2f, %.2f, %.2f[-]\n\n",
-			stats.Stats.LoadAvg1, stats.Stats.LoadAvg5, stats.Stats.LoadAvg15)
+		fmt.Fprintf(r.StatsView, "%sCPU Usage:[-]     %s%.1f%%[-]\n", cLabel, cFore, stats.Stats.CPUUsage)
+		fmt.Fprintf(r.StatsView, "%sMemory Usage:[-]  %s%.1f%%[-] (%s%s[-] / %s%s[-])\n",
+			cLabel, cFore, stats.Stats.MemUsage, cFore, formatBytes(stats.Stats.MemUsed), cFore, formatBytes(stats.Stats.MemTotal))
+		fmt.Fprintf(r.StatsView, "%sUptime:[-]        %s%s[-]\n", cLabel, cFore, formatUptime(stats.Stats.Uptime))
+		fmt.Fprintf(r.StatsView, "%sLoad Average:[-]  %s%.2f, %.2f, %.2f[-]\n\n",
+			cLabel, cFore, stats.Stats.LoadAvg1, stats.Stats.LoadAvg5, stats.Stats.LoadAvg15)
 	}
 
 	// Processes
 	if len(stats.Processes) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ TOP PROCESSES ═══[-]\n")
-		fmt.Fprintf(r.StatsView, "[gray]%-8s %-6s %-6s %-20s[-]\n", "PID", "CPU%", "MEM%", "NAME")
+		fmt.Fprintf(r.StatsView, "%s═══ TOP PROCESSES ═══[-]\n", cMed)
+		fmt.Fprintf(r.StatsView, "%s%-8s %-6s %-6s %-20s[-]\n", cDim, "PID", "CPU%", "MEM%", "NAME")
 		count := 0
 		for _, proc := range stats.Processes {
 			if count >= 10 {
 				break
 			}
-			fmt.Fprintf(r.StatsView, "[white]%-8d %-6.1f %-6.1f %-20s[-]\n",
-				proc.PID, proc.CPUUsage, float64(proc.MemUsage), truncate(proc.Name, 20))
+			fmt.Fprintf(r.StatsView, "%s%-8d %-6.1f %-6.1f %-20s[-]\n",
+				cFore, proc.PID, proc.CPUUsage, float64(proc.MemUsage), truncate(proc.Name, 20))
 			count++
 		}
 		fmt.Fprintf(r.StatsView, "\n")
@@ -120,78 +128,65 @@ func (r *RemoteComponent) Update() {
 
 	// Disks
 	if len(stats.Disks) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ DISK USAGE ═══[-]\n")
-		fmt.Fprintf(r.StatsView, "[gray]%-20s %-10s %-10s %-6s[-]\n", "DEVICE", "USED", "TOTAL", "USE%")
+		fmt.Fprintf(r.StatsView, "%s═══ DISK USAGE ═══[-]\n", cMed)
+		fmt.Fprintf(r.StatsView, "%s%-20s %-10s %-10s %-6s[-]\n", cDim, "DEVICE", "USED", "TOTAL", "USE%")
 		for _, disk := range stats.Disks {
-			fmt.Fprintf(r.StatsView, "[white]%-20s %-10s %-10s %-6.1f%%[-]\n",
-				truncate(disk.Device, 20), formatBytes(disk.Used), formatBytes(disk.Total), disk.UsedPercent)
+			fmt.Fprintf(r.StatsView, "%s%-20s %-10s %-10s %-6.1f%%[-]\n",
+				cFore, truncate(disk.Device, 20), formatBytes(disk.Used), formatBytes(disk.Total), disk.UsedPercent)
 		}
 		fmt.Fprintf(r.StatsView, "\n")
 	}
 
 	// Network
 	if len(stats.Nets) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ NETWORK ═══[-]\n")
-		fmt.Fprintf(r.StatsView, "[gray]%-15s %-12s %-12s[-]\n", "INTERFACE", "RX", "TX")
+		fmt.Fprintf(r.StatsView, "%s═══ NETWORK ═══[-]\n", cMed)
+		fmt.Fprintf(r.StatsView, "%s%-15s %-12s %-12s[-]\n", cDim, "INTERFACE", "RX", "TX")
 		for _, net := range stats.Nets {
-			fmt.Fprintf(r.StatsView, "[white]%-15s %-12s %-12s[-]\n",
-				truncate(net.Name, 15), formatBytes(net.BytesRecv), formatBytes(net.BytesSent))
+			fmt.Fprintf(r.StatsView, "%s%-15s %-12s %-12s[-]\n",
+				cFore, truncate(net.Name, 15), formatBytes(net.BytesRecv), formatBytes(net.BytesSent))
 		}
 		fmt.Fprintf(r.StatsView, "\n")
 	}
 
 	// Temperatures
 	if len(stats.Temps) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ TEMPERATURES ═══[-]\n")
+		fmt.Fprintf(r.StatsView, "%s═══ TEMPERATURES ═══[-]\n", cMed)
 		for _, temp := range stats.Temps {
-			color := "white"
+			color := cFore
 			if temp.Temperature > 80 {
-				color = "red"
+				color = cHigh
 			} else if temp.Temperature > 60 {
-				color = "yellow"
+				color = cMed
 			}
-			fmt.Fprintf(r.StatsView, "[cyan]%-20s[-] [%s]%.1f°C[-]\n", temp.Key, color, temp.Temperature)
+			fmt.Fprintf(r.StatsView, "%s%-20s[-] [%s]%.1f°C[-]\n", cLabel, temp.Key, color, temp.Temperature)
 		}
 		fmt.Fprintf(r.StatsView, "\n")
 	}
 
 	// GPUs
 	if len(stats.GPUs) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ GPU ═══[-]\n")
+		fmt.Fprintf(r.StatsView, "%s═══ GPU ═══[-]\n", cMed)
 		for _, gpu := range stats.GPUs {
-			fmt.Fprintf(r.StatsView, "[cyan]%s[-]\n", gpu.Name)
-			fmt.Fprintf(r.StatsView, "  Usage: [white]%d%%[-] | Temp: [white]%d°C[-] | Memory: [white]%d MiB[-] / [white]%d MiB[-]\n",
-				gpu.Utilization, gpu.Temp, gpu.MemoryUsed, gpu.MemoryTotal)
+			fmt.Fprintf(r.StatsView, "%s%s[-]\n", cLabel, gpu.Name)
+			fmt.Fprintf(r.StatsView, "  Usage: %s%d%%[-] | Temp: %s%d°C[-] | Memory: %s%d MiB[-] / %s%d MiB[-]\n",
+				cFore, gpu.Utilization, cFore, gpu.Temp, cFore, gpu.MemoryUsed, cFore, gpu.MemoryTotal)
 		}
 		fmt.Fprintf(r.StatsView, "\n")
 	}
 
 	// Docker Containers
 	if len(stats.Containers) > 0 {
-		fmt.Fprintf(r.StatsView, "[yellow]═══ DOCKER CONTAINERS ═══[-]\n")
-		fmt.Fprintf(r.StatsView, "[gray]%-20s %-15s[-]\n", "NAME", "IMAGE")
+		fmt.Fprintf(r.StatsView, "%s═══ DOCKER CONTAINERS ═══[-]\n", cMed)
+		fmt.Fprintf(r.StatsView, "%s%-20s %-15s[-]\n", cDim, "NAME", "IMAGE")
 		for _, container := range stats.Containers {
-			statusColor := "green"
+			statusColor := cLow
 			if container.Status != "running" {
-				statusColor = "gray"
+				statusColor = cDim
 			}
-			fmt.Fprintf(r.StatsView, "[%s]%-20s[-] [white]%-15s[-]\n",
-				statusColor, truncate(container.Name, 20), truncate(container.Image, 15))
+			fmt.Fprintf(r.StatsView, "[%s]%-20s[-] %s%-15s[-]\n",
+				statusColor, truncate(container.Name, 20), cFore, truncate(container.Image, 15))
 		}
 	}
-}
-
-func formatBytes(bytes uint64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := uint64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 func formatUptime(seconds uint64) string {

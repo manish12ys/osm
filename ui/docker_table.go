@@ -32,6 +32,7 @@ func NewDockerTableComponent() *DockerTableComponent {
 func (d *DockerTableComponent) ApplyTheme() {
 	d.Table.SetBorderColor(CurrentTheme.Border)
 	d.Table.SetTitleColor(CurrentTheme.HeaderTitle)
+	d.Table.SetSelectedStyle(tcell.StyleDefault.Foreground(CurrentTheme.SelectedFg).Background(CurrentTheme.SelectedBg))
 
 	for i := 0; i < d.Table.GetColumnCount(); i++ {
 		cell := d.Table.GetCell(0, i)
