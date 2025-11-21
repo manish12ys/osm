@@ -22,7 +22,12 @@ func main() {
 		ui.SetTheme(cfg.Theme)
 	}
 
-	layout := ui.NewAppLayout()
+	// Initialize layout with remote URL if enabled
+	remoteURL := ""
+	if cfg != nil && cfg.RemoteMode {
+		remoteURL = cfg.RemoteURL
+	}
+	layout := ui.NewAppLayout(remoteURL)
 
 	// Enable mouse support
 	layout.App.EnableMouse(true)
@@ -162,6 +167,11 @@ func main() {
 			activePage = "plugins"
 			layout.ActivePage = activePage
 			layout.App.SetFocus(layout.Plugins.Flex)
+		case '0':
+			layout.Pages.SwitchToPage("remote")
+			activePage = "remote"
+			layout.ActivePage = activePage
+			layout.App.SetFocus(layout.Remote.Flex)
 		case 't':
 			ui.CycleTheme()
 			layout.ApplyTheme()
@@ -249,6 +259,8 @@ func main() {
 				containers, _ = core.FetchContainers()
 			} else if activePage == "plugins" && pluginManager != nil {
 				pluginResults = pluginManager.ExecuteAll()
+			} else if activePage == "remote" {
+				// Remote monitoring doesn't need to fetch local data
 			}
 
 			layout.App.QueueUpdateDraw(func() {
@@ -268,6 +280,8 @@ func main() {
 					layout.DockerTable.Update(containers)
 				} else if activePage == "plugins" && pluginResults != nil {
 					layout.Plugins.Update(pluginResults)
+				} else if activePage == "remote" {
+					layout.Remote.Update()
 				} else if activePage == "cpu" {
 					layout.CPUDetail.Update(cpuHistory, perCoreUsage)
 				} else if activePage == "mem" {

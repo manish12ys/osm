@@ -34,6 +34,8 @@ Omarchy System Monitor (OSM) is a powerful yet lightweight terminal user interfa
 - **CPU Details** - Per-core CPU usage with historical graphs
 - **Memory Analytics** - Detailed memory usage visualization
 - **Battery Stats** - Battery capacity and charging status (laptops)
+- **Remote Monitoring** - Monitor remote systems over HTTP
+- **Plugin System** - Extend functionality with custom shell or Lua scripts
 
 ### 🎨 **Beautiful UI**
 - **Multiple Themes** - Choose from 6 themes: Omarchy Default, Cyberpunk, Retro CRT, Dracula, Solarized, and Nord
@@ -56,7 +58,10 @@ Omarchy System Monitor (OSM) is a powerful yet lightweight terminal user interfa
   - Custom theme selection
   - Adjustable refresh rate
   - Default page on startup
+  - Remote monitoring settings
+  - Plugin system configuration
 - **Data Export** - Export system snapshots to JSON (Press `e`)
+- **Custom Plugins** - Create your own monitoring plugins with shell scripts or Lua
 
 ## 🚀 Installation
 
@@ -153,6 +158,8 @@ The restart script will:
 | `6` | Switch to **Docker Containers** view |
 | `7` | Switch to **CPU Detail** view |
 | `8` | Switch to **Memory Detail** view |
+| `9` | Switch to **Plugins** view |
+| `0` | Switch to **Remote Monitoring** view |
 | `t` | Cycle through themes |
 | `T` | Toggle **Tree View** for processes |
 | `/` | **Search/Filter** processes |
@@ -198,11 +205,118 @@ theme: "Dracula"
 refresh_rate: 1000
 
 # Default page to show on startup
-# Options: "procs", "disks", "net", "temp", "gpu", "docker", "cpu", "mem"
+# Options: "procs", "disks", "net", "temp", "gpu", "docker", "plugins", "remote", "cpu", "mem"
 default_page: "procs"
+
+# Remote Monitoring
+remote_mode: false          # Enable remote monitoring client
+remote_url: ""              # Remote server URL (e.g., "http://192.168.1.100:8080")
+remote_server: false        # Run as remote monitoring server
+remote_port: "8080"         # Server port
+
+# Plugin System
+plugins_enabled: false      # Enable custom plugins
 ```
 
 See `config.example.yaml` for a complete example.
+
+### Remote Monitoring
+
+OSM supports monitoring remote systems over HTTP. This allows you to monitor multiple servers from a single terminal.
+
+#### Server Mode
+
+On the remote system you want to monitor, enable server mode:
+
+```yaml
+# ~/.config/osm/config.yaml on remote system
+remote_server: true
+remote_port: "8080"
+```
+
+Then run OSM on the remote system. It will start an HTTP server on the specified port.
+
+#### Client Mode
+
+On your local system, configure the remote URL:
+
+```yaml
+# ~/.config/osm/config.yaml on local system
+remote_mode: true
+remote_url: "http://192.168.1.100:8080"
+```
+
+Press `0` to switch to the Remote Monitoring view and see real-time stats from the remote system.
+
+**Features:**
+- View all system metrics from remote servers
+- Real-time updates
+- Secure HTTP communication
+- Monitor multiple systems by switching the `remote_url` in config
+
+### Plugin System
+
+Extend OSM with custom monitoring plugins written in shell scripts or Lua.
+
+#### Enabling Plugins
+
+```yaml
+# ~/.config/osm/config.yaml
+plugins_enabled: true
+```
+
+#### Creating Plugins
+
+Plugins are stored in `~/.config/osm/plugins/`. They must output valid JSON.
+
+**Example Shell Plugin** (`~/.config/osm/plugins/uptime.sh`):
+
+```bash
+#!/bin/bash
+# System Uptime Plugin
+
+UPTIME=$(uptime -p)
+cat <<EOF
+{
+  "title": "System Uptime",
+  "value": "$UPTIME"
+}
+EOF
+```
+
+**Example Plugin with Metrics** (`~/.config/osm/plugins/system_info.sh`):
+
+```bash
+#!/bin/bash
+# System Information Plugin
+
+cat <<EOF
+{
+  "title": "System Info",
+  "value": "Custom Metrics",
+  "metrics": {
+    "Kernel": "$(uname -r)",
+    "Shell": "$SHELL",
+    "User": "$USER",
+    "Hostname": "$(hostname)"
+  }
+}
+EOF
+```
+
+Make your plugin executable:
+```bash
+chmod +x ~/.config/osm/plugins/uptime.sh
+```
+
+Press `9` to view your custom plugins in action!
+
+**Plugin Features:**
+- Shell script (.sh) and Lua (.lua) support
+- JSON output format
+- Automatic refresh based on configurable intervals
+- Error handling and display
+- Example plugins created automatically
 
 
 ## 🔧 Technical Details

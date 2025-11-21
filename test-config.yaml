@@ -1,0 +1,19 @@
+# Omarchy System Monitor - Test Configuration
+
+# Theme
+theme: "Dracula"
+
+# Refresh rate in milliseconds
+refresh_rate: 1000
+
+# Default page
+default_page: "procs"
+
+# Remote Monitoring (disabled for local testing)
+remote_mode: false
+remote_url: ""
+remote_server: false
+remote_port: "8080"
+
+# Plugin System (enabled for testing)
+plugins_enabled: true

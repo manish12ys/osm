@@ -23,6 +23,7 @@ type AppLayout struct {
 	GPU         *GPUComponent
 	DockerTable *DockerTableComponent
 	Plugins     *PluginsComponent
+	Remote      *RemoteComponent
 	CPUDetail   *CPUDetailComponent
 	MemDetail   *MemDetailComponent
 	ActivePage  string
@@ -61,18 +62,18 @@ func (l *AppLayout) AdjustLayout() {
 	// Adjust footer text based on width
 	if width < 80 {
 		// Compact footer for narrow terminals
-		l.Footer.SetText(" q:Quit | 1-8:Views | t:Theme | /:Search | e:Export ")
+		l.Footer.SetText(" q:Quit | 1-9,0:Views | t:Theme | /:Search | e:Export ")
 	} else if width < 120 {
 		// Medium footer
-		l.Footer.SetText(" q:Quit | 1:Procs 2:Disks 3:Net 4:Temp 5:GPU 6:Docker 7:CPU 8:Mem | t:Theme | /:Search ")
+		l.Footer.SetText(" q:Quit | 1:Procs 2:Disks 3:Net 4:Temp 5:GPU 6:Docker 7:CPU 8:Mem 9:Plugins 0:Remote | t:Theme ")
 	} else {
 		// Full footer
-		l.Footer.SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | k: Kill | t: Theme | /: Search | e: Export ")
+		l.Footer.SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export ")
 	}
 }
 
 // NewAppLayout initializes the TUI layout
-func NewAppLayout() *AppLayout {
+func NewAppLayout(remoteURL string) *AppLayout {
 	app := tview.NewApplication()
 
 	// Header
@@ -91,7 +92,7 @@ func NewAppLayout() *AppLayout {
 	// Footer
 	footer := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | k: Kill | t: Theme | /: Search | e: Export ")
+		SetText(" q: Quit | 1: Procs | 2: Disks | 3: Net | 4: Temp | 5: GPU | 6: Docker | 7: CPU | 8: Mem | 9: Plugins | 0: Remote | k: Kill | t: Theme | /: Search | e: Export ")
 	footer.SetBorder(true)
 
 	// Components
@@ -114,6 +115,8 @@ func NewAppLayout() *AppLayout {
 
 	pluginsComp := NewPluginsComponent()
 
+	remoteComp := NewRemoteComponent(remoteURL)
+
 	cpuDetailComp := NewCPUDetailComponent()
 
 	memDetailComp := NewMemDetailComponent()
@@ -127,6 +130,7 @@ func NewAppLayout() *AppLayout {
 	pages.AddPage("gpu", gpuComp.Table, true, false)
 	pages.AddPage("docker", dockerTableComp.Table, true, false)
 	pages.AddPage("plugins", pluginsComp.Flex, true, false)
+	pages.AddPage("remote", remoteComp.Flex, true, false)
 	pages.AddPage("cpu", cpuDetailComp.Flex, true, false)
 	pages.AddPage("mem", memDetailComp.Flex, true, false)
 
@@ -156,6 +160,7 @@ func NewAppLayout() *AppLayout {
 		GPU:         gpuComp,
 		DockerTable: dockerTableComp,
 		Plugins:     pluginsComp,
+		Remote:      remoteComp,
 		CPUDetail:   cpuDetailComp,
 		MemDetail:   memDetailComp,
 	}
@@ -209,6 +214,7 @@ func (l *AppLayout) ApplyTheme() {
 	l.GPU.ApplyTheme()
 	l.DockerTable.ApplyTheme()
 	l.Plugins.ApplyTheme()
+	l.Remote.ApplyTheme()
 	l.CPUDetail.ApplyTheme()
 	l.MemDetail.ApplyTheme()
 }
