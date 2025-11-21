@@ -4,7 +4,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.25.4-00ADD8?style=for-the-badge&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-orange?style=for-the-badge)](https://www.linux.org/)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C20%7C%20Windows-orange?style=for-the-badge)](https://www.linux.org/)
 
 **A beautiful, lightweight terminal-based system monitor built with Go**
 
